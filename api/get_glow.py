@@ -3,35 +3,35 @@ import json
 from http.server import BaseHTTPRequestHandler
 import requests
 
-# Set these in Vercel Dashboard -> Environment Variables
-SUPABASE_URL = os.environ.get("https://tfpscbilfwekzvvktinm.supabase.co")
-SUPABASE_KEY = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcHNjYmlsZndla3p2dmt0aW5tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDg5NDI0NCwiZXhwIjoyMDg2NDcwMjQ0fQ.PrlLd396pU_lBMbIws-Dl17u2Eu-UUgrjZGgFbqTIjI")
+# This pulls directly from the Vercel Settings you just saved
+SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        content_length = int(self.headers.get('Content-Length', 0))
-        post_data = json.loads(self.rfile.read(content_length))
-        
-        # We pass the symbol directly to your existing Edge Function
-        # The Edge Function handles the Symbol -> Token -> Astro mapping
-        headers = {
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        edge_function_url = f"{SUPABASE_URL}/https://tfpscbilfwekzvvktinm.supabase.co/functions/v1/Simulate-3"
-        
         try:
-            response = requests.post(edge_url, headers=headers, json={
-                "symbol": post_data.get('symbol').upper(),
-                "user_tier": post_data.get('tier', 'PRO')
-            })
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = json.loads(self.rfile.read(content_length))
+            symbol = post_data.get('symbol', 'RELIANCE').upper()
+
+            # The Brain: Calling your Symbol Edge Function
+            target_url = f"{SUPABASE_URL}/functions/v1/swinglab-engine"
             
+            headers = {
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.post(target_url, headers=headers, json={"symbol": symbol})
+            response_data = response.json()
+
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(response.json()).encode())
+            self.wfile.write(json.dumps(response_data).encode())
+
         except Exception as e:
             self.send_response(500)
+            self.send_header('Content-type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({"error": str(e)}).encode())
