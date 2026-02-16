@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>TradeVision Pro – SwingLab Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  
+  <style>
+    :root {
+      /* TARA SwingLab High-Contrast Theme */
+      --bg: #050505;
+      --bg-panel: #111111;
+      --accent: #D4AF37; /* Gold */
+      --accent-soft: #F3E5AB; 
+      --danger: #f23645;
+      --text: #ffffff;
+      --muted: #888888;
+      --success: #089981;
+      --warning: #f59e0b;
+      --cyan: #00FFFF;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a0a0a;
+      border-bottom: 1px solid #222;
+      z-index: 100;
+    }
+    header h1 {
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    header span {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 12px;
+      padding: 12px;
+      min-height: 0;
+    }
+    /* Mobile Responsive Dark Mode Default */
+    @media (max-width: 1024px) {
+      main { 
+        grid-template-columns: 1fr; 
+        grid-template-rows: auto 1fr; 
+        overflow-y: auto; 
+      }
+      .panel { min-height: fit-content; }
+      header h1 { font-size: 14px; }
+      #chartContainer { min-height: 400px; }
+    }
+    .panel {
+      background: var(--bg-panel);
+      border-radius: 8px;
+      border: 1px solid #222;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .panel-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .tag {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      color: var(--muted);
+      background: #000;
+    }
+    .tag.success { color: #000; background: var(--accent); border-color: var(--accent); font-weight: bold; }
+    .tag.warning { color: #000; background: var(--warning); border-color: var(--warning); font-weight: bold; }
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin: 14px 0 6px;
+      font-weight: 600;
+    }
+    .control-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 60px;
+    }
+    select, input[type="text"], input[type="number"] {
+      background: #000;
+      border-radius: 4px;
+      border: 1px solid #333;
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: 12px;
+      flex: 1;
+    }
+    select:focus, input[type="text"]:focus, input[type="number"]:focus { 
+      border-color: var(--accent); outline: none; 
+    }
+    button {
+      border-radius: 4px;
+      border: 1px solid transparent;
+      padding: 6px 14px;
+      cursor: pointer;
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+    button:hover:not(:disabled) { opacity: 0.9; }
+    button.secondary { background: #222; color: var(--text); border-color: #333; }
+    button.secondary:hover:not(:disabled) { border-color: var(--accent); }
+    button.danger { background: transparent; color: var(--danger); border-color: #333; }
+    button.danger:hover:not(:disabled) { border-color: var(--danger); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .metric {
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #222;
+      background: #050505;
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .metric-label { color: var(--muted); }
+    .metric-value { color: var(--accent); font-weight: 600; }
+    .log {
+      flex: 1;
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #222;
+      background: #000;
+      font-family: ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 10px;
+      color: var(--muted);
+      overflow-y: auto;
+      max-height: 150px;
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+    .forecast-buttons { display: flex; gap: 6px; margin-top: 6px; }
+    .forecast-buttons button { flex: 1; font-size: 11px; padding: 8px 4px; border: none; }
+    
+    #chartContainer {
+      flex: 1;
+      background: #000;
+      border-radius: 4px;
+      border: 1px solid #222;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+    .alert { padding: 10px 12px; border-radius: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid; }
+    .alert.error { background: rgba(242, 54, 69, 0.1); border-color: var(--danger); color: var(--danger); }
+    .alert.success { background: rgba(8, 153, 129, 0.1); border-color: var(--success); color: var(--success); }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>TRADEVISION PRO</h1>
+  </div>
+  <span id="statusText">System Ready · Cloud Connected</span>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Control Panel</div>
+      <div class="tag" id="versionTag">SwingLab Engine</div>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <div class="section-label">📡 Data Selector (NSE)</div>
+    <div class="control-row">
+      <input id="symbolInput" type="text" placeholder="e.g. RELIANCE, TCS" value="RELIANCE" />
+      <button id="fetchDataBtn" class="secondary">Load Data</button>
+    </div>
+
+    <div class="section-label">⚙️ Simulation Engine</div>
+    <div class="control-row">
+      <label>Regime Override</label>
+      <select id="simRegime">
+        <option value="auto">Auto-Detect</option>
+        <option value="bull">Force Bullish</option>
+        <option value="bear">Force Bearish</option>
+        <option value="flat">Force Flat / Range</option>
+      </select>
+    </div>
+    <div class="control-row">
+      <label>Display</label>
+      <select id="simDisplay">
+        <option value="all">All At Once</option>
+        <option value="replay" selected>Candle by Candle</option>
+      </select>
+    </div>
+    <div class="control-row">
+      <label>Lookback</label>
+      <input id="lookback" type="number" value="30" min="5" max="500" />
+      <label style="margin-left:4px;">Forward</label>
+      <input id="forwardCount" type="number" value="15" min="3" max="200" />
+    </div>
+
+    <div class="control-row" id="replayControls" style="display:flex; gap:6px; margin-top:8px;">
+      <button id="playBtn" class="secondary" style="flex:1;" disabled>▶ Play</button>
+      <button id="stepBtn" class="secondary" style="flex:1;" disabled>⏭ Step</button>
+    </div>
+
+    <div class="control-row" style="margin-top:8px;">
+      <button id="simulateBtn" disabled style="flex:1;">🚀 Request Simulation</button>
+      <button id="resetBtn" class="danger">🔄 Reset</button>
+    </div>
+
+    <div class="section-label">🎯 Training Mode</div>
+    <div class="control-row">
+      <label>Mode</label>
+      <select id="trainingMode">
+        <option value="off" selected>Disabled</option>
+        <option value="step">Active</option>
+      </select>
+    </div>
+    <div class="forecast-buttons">
+      <button id="bullBtn" disabled style="background: #089981; color: white;">📈 Bull</button>
+      <button id="neutralBtn" disabled style="background: #555555; color: white;">➖ Flat</button>
+      <button id="bearBtn" disabled style="background: #f23645; color: white;">📉 Bear</button>
+    </div>
+
+    <div class="section-label">📊 Analytics</div>
+    <div class="metrics">
+      <div class="metric">
+        <span class="metric-label">Regime</span>
+        <span class="metric-value" id="regimeLabel">–</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Vol</span>
+        <span class="metric-value" id="volLabel">–</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Acc. %</span>
+        <span class="metric-value" id="scoreLabel" style="color:#089981;">0%</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Vector</span>
+        <span class="metric-value" id="atrLabel">–</span>
+      </div>
+    </div>
+
+    <div class="section-label">📝 Session Log</div>
+    <div class="log" id="logBox">System initialized. Awaiting API connection. <br>💡 Hint: Use Mouse Wheel to Zoom, Drag to Pan.</div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">SwingLab Canvas</div>
+      <div class="tag" id="chartStatus">Awaiting Data</div>
+    </div>
+    <div id="chartContainer">
+      <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+  </section>
+</main>
+
+<script>
+// ========== GLOBAL STATE ==========
+let ohlcv = [];
+let simData = [];
+let fullSimData = []; 
+let trainingIndex = null;
+let canvas, ctx;
+
+let playInterval = null;
+let currentSymbol = "UNKNOWN";
+let currentTimeframe = "1D";
+
+let mouseX = -1; let mouseY = -1;
+let isDragging = false; let dragStartX = 0; let dragStartOffset = 0;
+let visibleBars = 100; let barOffset = 0;     
+
+let correctGuesses = 0; let totalGuesses = 0;
+
+const logBox = document.getElementById('logBox');
+const alertBox = document.getElementById('alertBox');
+
+function log(msg, type = 'info') {
+  const ts = new Date().toISOString().substring(11, 19);
+  const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+  logBox.textContent += `\n[${ts}] ${prefix} ${msg}`;
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+function showAlert(msg, type = 'info') {
+  alertBox.innerHTML = `<div class="alert ${type}">${msg}</div>`;
+  setTimeout(() => { alertBox.innerHTML = ''; }, 5000);
+}
+
+function setMetric(id, value) { document.getElementById(id).textContent = value; }
+
+// ========== UI LISTENERS ==========
+document.getElementById('simDisplay').addEventListener('change', (e) => {
+  const replayRow = document.getElementById('replayControls');
+  if(e.target.value === 'replay') { replayRow.style.display = 'flex'; } 
+  else {
+    replayRow.style.display = 'none';
+    document.getElementById('trainingMode').value = 'off'; 
+    disableTrainingButtons();
+  }
+});
+
+document.getElementById('trainingMode').addEventListener('change', (e) => {
+    if(e.target.value === 'step') {
+        document.getElementById('simDisplay').value = 'replay';
+        document.getElementById('replayControls').style.display = 'flex';
+    } else disableTrainingButtons();
+});
+
+function disableTrainingButtons() {
+    document.getElementById('bullBtn').disabled = true;
+    document.getElementById('neutralBtn').disabled = true;
+    document.getElementById('bearBtn').disabled = true;
+}
+
+// ========== DUMMY API FETCH (TO BE REPLACED WITH SUPABASE IN PHASE 3) ==========
+document.getElementById('fetchDataBtn').addEventListener('click', async () => {
+  const symbol = document.getElementById('symbolInput').value.toUpperCase();
+  if(!symbol) return showAlert('Enter a valid symbol', 'error');
+  
+  log(`Requesting historical data for ${symbol} from Vault...`);
+  currentSymbol = symbol;
+  
+  // DUMMY DATA GENERATOR FOR UI TESTING
+  ohlcv = [];
+  let basePrice = 2500;
+  let t = new Date().getTime() - (100 * 86400000);
+  for(let i=0; i<100; i++) {
+      t += 86400000;
+      let move = (Math.random() - 0.45) * 40;
+      let c = basePrice + move;
+      ohlcv.push({
+          t: new Date(t), o: basePrice, h: Math.max(basePrice, c) + 10, l: Math.min(basePrice, c) - 10, c: c
+      });
+      basePrice = c;
+  }
+  
+  visibleBars = Math.min(ohlcv.length, 100);
+  barOffset = 0;
+  simData = []; fullSimData = [];
+  
+  showAlert(`✅ Loaded ${ohlcv.length} historical candles for ${symbol}`, 'success');
+  document.getElementById('simulateBtn').disabled = false;
+  document.getElementById('chartStatus').textContent = 'Data Secured';
+  document.getElementById('chartStatus').className = 'tag success';
+  initChart();
+});
+
+document.getElementById('simulateBtn').addEventListener('click', async () => {
+  if (!ohlcv.length) return;
+  const forwardCount = parseInt(document.getElementById('forwardCount').value || "15", 10);
+  
+  log('Dispatching parameters to Supabase Edge Function...', 'info');
+  
+  // DUMMY SIMULATION FETCH (API logic will be injected here)
+  fullSimData = [];
+  let lastCandle = ohlcv[ohlcv.length - 1];
+  let currentPrice = lastCandle.c;
+  let t = lastCandle.t.getTime();
+  
+  for(let i=0; i<forwardCount; i++) {
+      t += 86400000;
+      let move = (Math.random() - 0.45) * 30;
+      let c = currentPrice + move;
+      fullSimData.push({ t: new Date(t), o: currentPrice, h: Math.max(currentPrice, c) + 8, l: Math.min(currentPrice, c) - 8, c: c });
+      currentPrice = c;
+  }
+  
+  setMetric('regimeLabel', 'Vault Calc');
+  setMetric('volLabel', 'Vault Calc');
+  setMetric('atrLabel', 'Alpha Vector');
+
+  const displayMode = document.getElementById('simDisplay').value;
+  const tMode = document.getElementById('trainingMode').value;
+  clearInterval(playInterval); 
+  
+  if (barOffset === 0) visibleBars = Math.min(ohlcv.length + fullSimData.length, 100);
+
+  if (displayMode === 'all') {
+      simData = [...fullSimData];
+      document.getElementById('playBtn').disabled = true;
+      document.getElementById('stepBtn').disabled = true;
+      log(`Simulation payload received · ${forwardCount} paths rendered.`, 'success');
+      drawChart();
+  } else if (displayMode === 'replay') {
+      simData = []; 
+      log(`Simulation payload secured. Ready to Replay.`, 'success');
+      drawChart();
+      if (tMode === 'step') enableTraining();
+      else {
+          document.getElementById('playBtn').disabled = false;
+          document.getElementById('stepBtn').disabled = false;
+      }
+  }
+});
+
+// ========== NATIVE CANVAS CHART ENGINE (Unchanged from Prototype) ==========
+function initChart() {
+  canvas = document.getElementById('canvas');
+  ctx = canvas.getContext('2d');
+  canvas.style.display = 'block';
+
+  function resize() {
+    const rect = canvas.parentNode.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    drawChart();
+  }
+
+  if (!canvas.dataset.listenersAdded) {
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const allDataLength = ohlcv.length + simData.length;
+        if(allDataLength === 0) return;
+        const zoomFactor = 0.1;
+        if (e.deltaY < 0) visibleBars = Math.max(10, visibleBars * (1 - zoomFactor));
+        else visibleBars = Math.min(allDataLength, visibleBars * (1 + zoomFactor));
+        barOffset = Math.max(0, Math.min(allDataLength - visibleBars, barOffset));
+        drawChart();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        isDragging = true; dragStartX = e.clientX; dragStartOffset = barOffset;
+        canvas.style.cursor = 'grabbing';
+    });
+
+    canvas.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor = 'crosshair'; });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'crosshair'; mouseX = -1; mouseY = -1; drawChart(); });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+      const allDataLength = ohlcv.length + simData.length;
+
+      if (isDragging && allDataLength > 0) {
+          const deltaX = e.clientX - dragStartX;
+          const pxPerBar = (canvas.width - 90) / visibleBars; 
+          const barsShifted = deltaX / pxPerBar;
+          barOffset = dragStartOffset + barsShifted;
+          barOffset = Math.max(0, Math.min(allDataLength - visibleBars, barOffset));
+      }
+      drawChart();
+    });
+    canvas.dataset.listenersAdded = 'true';
+  }
+  resize(); window.addEventListener('resize', resize); drawChart();
+}
+
+function calculateSMA(data, period) {
+  const sma = new Array(data.length).fill(null);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) {
+    sum += data[i].c;
+    if (i >= period) { sum -= data[i - period].c; sma[i] = sum / period; } 
+    else if (i === period - 1) { sma[i] = sum / period; }
+  }
+  return sma;
+}
+
+function drawChart() {
+  if (!ctx) return;
+  const w = canvas.width; const h = canvas.height;
+  const paddingLeft = 70; const paddingRight = 20; const paddingTop = 40; const paddingBottom = 40;
+
+  const allData = [...ohlcv, ...simData];
+  if (!allData.length) return;
+
+  let viewCount = Math.max(10, Math.min(allData.length, Math.round(visibleBars)));
+  let currentOffset = Math.max(0, Math.min(allData.length - viewCount, Math.round(barOffset)));
+  const startIndex = allData.length - viewCount - currentOffset;
+  const endIndex = startIndex + viewCount;
+  const viewData = allData.slice(startIndex, endIndex);
+  if(!viewData.length) return;
+
+  const sma20Full = calculateSMA(allData, 20); const sma50Full = calculateSMA(allData, 50);
+  const sma20View = sma20Full.slice(startIndex, endIndex); const sma50View = sma50Full.slice(startIndex, endIndex);
+
+  let prices = viewData.flatMap(d => [d.h, d.l]).concat(sma20View.filter(v => v !== null)).concat(sma50View.filter(v => v !== null));
+  let minPrice = Math.min(...prices); let maxPrice = Math.max(...prices);
+  if(minPrice === maxPrice) { minPrice -= 1; maxPrice += 1; }
+  
+  const paddingPct = 0.05 * (maxPrice - minPrice);
+  minPrice -= paddingPct; maxPrice += paddingPct;
+  const priceRange = maxPrice - minPrice;
+
+  const usableWidth = w - paddingLeft - paddingRight; const usableHeight = h - paddingTop - paddingBottom;
+  const totalBars = viewData.length; const gap = 1;
+  const barWidth = Math.max(3, Math.min(20, usableWidth / totalBars - gap));
+
+  ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+
+  ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(-Math.PI / 8); 
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'; ctx.fillText('SwingLab by TARA', 0, 0); ctx.restore();
+
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 0.5; ctx.fillStyle = '#888';
+  ctx.font = '10px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 5; i++) {
+    const price = minPrice + priceRange * (1 - i / 5);
+    const y = paddingTop + (usableHeight * i) / 5;
+    ctx.beginPath(); ctx.moveTo(paddingLeft, y); ctx.lineTo(w - paddingRight, y); ctx.stroke();
+    ctx.fillText(price.toFixed(price > 100 ? 0 : 2), paddingLeft - 5, y);
+  }
+
+  ctx.fillStyle = '#888'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  if (totalBars > 0) {
+    for (let i = 0; i <= 4; i++) {
+      const dataIndex = Math.floor(i * (totalBars - 1) / 4);
+      if(viewData[dataIndex]) {
+          const x = paddingLeft + dataIndex * (barWidth + gap) + barWidth/2;
+          ctx.fillText(viewData[dataIndex].t.toLocaleDateString(), x, h - paddingBottom + 10);
+      }
+    }
+  }
+
+  function yForPrice(p) { return paddingTop + usableHeight * (1 - (p - minPrice) / priceRange); }
+
+  function drawCandle(d, x, palette) {
+    const yH = yForPrice(d.h); const yL = yForPrice(d.l); const yO = yForPrice(d.o); const yC = yForPrice(d.c);
+    ctx.strokeStyle = palette.wick; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + barWidth / 2, yH); ctx.lineTo(x + barWidth / 2, yL); ctx.stroke();
+    const bodyTop = Math.min(yO, yC); let bodyHeight = Math.max(Math.abs(yO - yC), 2);
+    ctx.fillStyle = d.c >= d.o ? palette.up : palette.down;
+    ctx.fillRect(x, bodyTop, barWidth, bodyHeight);
+  }
+
+  const histPalette = { wick: 'rgba(8, 153, 129, 0.9)', up: 'rgba(8, 153, 129, 0.9)', down: 'rgba(242, 54, 69, 0.9)' };
+  const simPalette = { wick: 'rgba(212, 175, 55, 1.0)', up: 'rgba(212, 175, 55, 0.95)', down: 'rgba(168, 137, 35, 0.6)' };
+  const historyLen = ohlcv.length;
+
+  viewData.forEach((d, i) => {
+    const x = paddingLeft + i * (barWidth + gap);
+    drawCandle(d, x, (startIndex + i) < historyLen ? histPalette : simPalette);
+  });
+
+  function drawSMALine(smaDataArray, color, width) {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width;
+    let started = false;
+    for (let i = 0; i < viewData.length; i++) {
+      if (smaDataArray[i] !== null) {
+        let x = paddingLeft + i * (barWidth + gap) + barWidth / 2;
+        let y = yForPrice(smaDataArray[i]);
+        if (!started) { ctx.moveTo(x, y); started = true; } else { ctx.lineTo(x, y); }
+      }
+    }
+    ctx.stroke();
+  }
+
+  drawSMALine(sma20View, '#00FFFF', 1.5); drawSMALine(sma50View, '#D4AF37', 1.5);
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(`${currentSymbol} • ${currentTimeframe}`, paddingLeft + 15, 10);
+  ctx.font = '12px monospace'; ctx.fillStyle = '#00FFFF'; ctx.fillText('SMA 20', paddingLeft + 15, 30);
+  ctx.fillStyle = '#D4AF37'; ctx.fillText('SMA 50', paddingLeft + 70, 30);
+  if(simData.length > 0) { ctx.fillStyle = '#D4AF37'; ctx.fillText('• Vault Simulation Active', w - paddingRight - 180, 10); }
+
+  if (mouseX >= paddingLeft && mouseX <= w - paddingRight && mouseY >= paddingTop && mouseY <= h - paddingBottom && !isDragging) {
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(paddingLeft, mouseY); ctx.lineTo(w - paddingRight, mouseY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mouseX, paddingTop); ctx.lineTo(mouseX, h - paddingBottom); ctx.stroke(); ctx.setLineDash([]);
+
+    const innerX = mouseX - paddingLeft; const hoverIndex = Math.floor(innerX / (barWidth + gap));
+    if (hoverIndex >= 0 && hoverIndex < totalBars) {
+      const d = viewData[hoverIndex];
+      let smaText = "";
+      if (sma20View[hoverIndex]) smaText += ` | SMA20: ${sma20View[hoverIndex].toFixed(2)}`;
+      if (sma50View[hoverIndex]) smaText += ` | SMA50: ${sma50View[hoverIndex].toFixed(2)}`;
+      
+      const text = `${d.t.toLocaleDateString()} | O: ${d.o.toFixed(2)} | H: ${d.h.toFixed(2)} | L: ${d.l.toFixed(2)} | C: ${d.c.toFixed(2)}${smaText}`;
+      const textWidth = ctx.measureText(text).width;
+      let tooltipX = mouseX > w / 2 ? w - textWidth - 25 : paddingLeft + 15;
+      
+      ctx.fillStyle = 'rgba(10, 10, 10, 0.9)'; ctx.fillRect(tooltipX - 5, h - paddingBottom - 30, textWidth + 10, 24);
+      ctx.fillStyle = '#D4AF37'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(text, tooltipX, h - paddingBottom - 18);
+    }
+  }
+}
+
+// ========== REPLAY & TRAINING CONTROLS (Unchanged) ==========
+document.getElementById('stepBtn').addEventListener('click', () => {
+    if (simData.length < fullSimData.length) {
+        simData.push(fullSimData[simData.length]);
+        if (barOffset === 0 && visibleBars < ohlcv.length + simData.length) visibleBars++; 
+        drawChart();
+    } else log("Replay complete.", "info");
+});
+
+document.getElementById('playBtn').addEventListener('click', (e) => {
+    const btn = e.target;
+    if (playInterval) { clearInterval(playInterval); playInterval = null; btn.innerText = "▶ Play"; } 
+    else {
+        btn.innerText = "⏸ Pause";
+        playInterval = setInterval(() => {
+            if (simData.length < fullSimData.length) {
+                simData.push(fullSimData[simData.length]);
+                if (barOffset === 0 && visibleBars < ohlcv.length + simData.length) visibleBars++; 
+                drawChart();
+            } else { clearInterval(playInterval); playInterval = null; btn.innerText = "▶ Play"; log("Replay complete.", "info"); }
+        }, 150); 
+    }
+});
+
+function enableTraining() {
+  trainingIndex = 0; correctGuesses = 0; totalGuesses = 0;
+  setMetric('scoreLabel', '0%'); document.getElementById('scoreLabel').style.color = '#089981';
+  document.getElementById('bullBtn').disabled = false; document.getElementById('neutralBtn').disabled = false; document.getElementById('bearBtn').disabled = false;
+  document.getElementById('playBtn').disabled = true; document.getElementById('stepBtn').disabled = true;
+  log('Training mode activated · make your forecast', 'success');
+  simData = []; drawChart();
+}
+
+function handleForecast(dir) {
+  if (trainingIndex === null || trainingIndex >= fullSimData.length) return;
+  const candle = fullSimData[trainingIndex];
+  const prevClose = trainingIndex === 0 ? ohlcv[ohlcv.length - 1].c : fullSimData[trainingIndex - 1].c;
+  const actual = candle.c > prevClose ? 'bullish' : candle.c < prevClose ? 'bearish' : 'neutral';
+  const match = dir === actual;
+
+  totalGuesses++; if(match) correctGuesses++;
+  const accuracy = Math.round((correctGuesses / totalGuesses) * 100);
+  setMetric('scoreLabel', accuracy + '%');
+  document.getElementById('scoreLabel').style.color = accuracy < 50 ? '#f23645' : '#089981';
+  log(`Forecast ${dir.toUpperCase()} · Actual ${actual.toUpperCase()} · ${match ? '✅ MATCH' : '❌ MISS'}`, match ? 'success' : 'error');
+
+  trainingIndex++; simData.push(fullSimData[trainingIndex - 1]);
+  if (barOffset === 0 && visibleBars < ohlcv.length + simData.length) visibleBars++; 
+  drawChart();
+
+  if (trainingIndex >= fullSimData.length) {
+    log('Training sequence complete', 'success');
+    disableTrainingButtons();
+    document.getElementById('playBtn').disabled = false; document.getElementById('stepBtn').disabled = false;
+  }
+}
+
+document.getElementById('bullBtn').addEventListener('click', () => handleForecast('bullish'));
+document.getElementById('neutralBtn').addEventListener('click', () => handleForecast('neutral'));
+document.getElementById('bearBtn').addEventListener('click', () => handleForecast('bearish'));
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  ohlcv = []; simData = []; fullSimData = []; trainingIndex = null; correctGuesses = 0; totalGuesses = 0; currentSymbol = "UNKNOWN";
+  clearInterval(playInterval); playInterval = null; document.getElementById('playBtn').innerText = "▶ Play";
+  if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('simulateBtn').disabled = true; disableTrainingButtons();
+  document.getElementById('playBtn').disabled = true; document.getElementById('stepBtn').disabled = true;
+  document.getElementById('chartStatus').textContent = 'Awaiting Data'; document.getElementById('chartStatus').className = 'tag';
+  setMetric('regimeLabel', '–'); setMetric('volLabel', '–'); setMetric('atrLabel', '–'); setMetric('scoreLabel', '0%');
+  document.getElementById('scoreLabel').style.color = '#089981';
+  logBox.textContent = 'System reset. Ready for new API request.'; alertBox.innerHTML = ''; log('Reset complete', 'success');
+});
+</script>
+</body>
+</html>
