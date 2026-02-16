@@ -238,38 +238,90 @@
 </div>
 
 <script>
-  // SaaS Gatekeeping Logic
-  function simulateLogin() {
+  // 1. Initialize Supabase (Use your Vercel Env Vars here)
+const _supabase = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
+
+let chart, candlestickSeries, forecastSeries;
+
+// 2. Real Auth Logic (Replaces simulateLogin)
+async function simulateLogin() {
     const email = document.getElementById('email-input').value;
     const password = document.getElementById('password-input').value;
-    
-    if(!email || !password) {
-      document.getElementById('auth-error-msg').innerText = "Please enter valid credentials.";
-      return;
-    }
-    
-    // Simulate API authorization delay
-    document.querySelector('.auth-btn').innerText = "Authenticating...";
-    
-    setTimeout(() => {
-      // 1. Hide the Gate
-      document.getElementById('auth-gate').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('auth-gate').style.display = 'none';
-        // 2. Reveal the Terminal
-        document.getElementById('app-container').style.display = 'flex';
-        document.getElementById('display-email').innerText = email;
-        document.querySelector('.auth-btn').innerText = "Sign In to Workspace";
-      }, 500);
-    }, 800);
-  }
+    const btn = document.querySelector('.auth-btn');
 
-  function logout() {
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('auth-gate').style.display = 'flex';
-    document.getElementById('auth-gate').style.opacity = '1';
-    document.getElementById('password-input').value = '';
-  }
+    btn.innerText = "Connecting to SwingLab...";
+    
+    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        document.getElementById('auth-error-msg').innerText = error.message;
+        btn.innerText = "Sign In to Workspace";
+        return;
+    }
+
+    // Success: Reveal the Terminal
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-container').style.display = 'flex';
+    document.getElementById('display-email').innerText = data.user.email;
+    initChart(); // Initialize the Canvas
+}
+
+// 3. The Canvas Engine (Lightweight Charts Integration)
+function initChart() {
+    const container = document.getElementById('chartContainer');
+    container.innerHTML = ''; // Clear the "Secured" placeholder
+
+    chart = LightweightCharts.createChart(container, {
+        layout: { background: { color: '#050505' }, textColor: '#D4AF37' },
+        grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    });
+
+    candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#089981', downColor: '#f23645', borderVisible: false, wickUpColor: '#089981', wickDownColor: '#f23645'
+    });
+
+    // This is the "Gold Glow" Series for Future Candles
+    forecastSeries = chart.addCandlestickSeries({
+        upColor: '#D4AF37', downColor: '#AA8A2E', borderVisible: true, borderColor: '#D4AF37'
+    });
+}
+
+// 4. Trigger the "Brain" (Supabase Edge Function Plug)
+async function loadEngineData() {
+    const symbol = document.getElementById('symbolInput').value;
+    if (!symbol) return alert("Enter Ticker");
+
+    // Call your Edge Function (The 0.55/0.45 Logic)
+    const { data, error } = await _supabase.functions.invoke('swinglab-engine', {
+        body: { symbol: symbol, type: 'simulation' }
+    });
+
+    if (data) {
+        // Set historical data
+        candlestickSeries.setData(data.historical);
+        
+        // REVEAL GLOW: Play the forward candles in Gold
+        forecastSeries.setData(data.forecast);
+        
+        // Update the UI with the Fused Score (Expert/Pro Tier)
+        console.log(`Fused Score: ${data.fused_score} | Node: ${data.temporal_node}`);
+    }
+}
+
+// 5. "Beat the Engine" - Scoring Logic
+async function submitPrediction(userPrice) {
+    const { data, error } = await _supabase.rpc('beat_the_engine', {
+        user_pred_price: userPrice,
+        user_id: (await _supabase.auth.getUser()).data.user.id
+    });
+    alert(`Accuracy: ${data.accuracy}% | TARA Score: +${data.points_awarded}`);
+}
+
+async function logout() {
+    await _supabase.auth.signOut();
+    location.reload();
+}
 </script>
 
 </body>
