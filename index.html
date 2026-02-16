@@ -3,32 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <title>TradeVision Pro – SwingLab SaaS</title>
-  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+
   <style>
     :root { --bg: #050505; --panel: #111; --accent: #D4AF37; --text: #fff; --success: #089981; }
-    body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     #auth-gate { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .auth-box { background: var(--panel); border: 1px solid #333; padding: 40px; border-radius: 8px; width: 380px; text-align: center; }
     #app-container { display: none; flex: 1; flex-direction: column; }
     header { padding: 15px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
     main { flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 10px; padding: 10px; min-height: 0; }
-    .panel { background: var(--panel); border: 1px solid #222; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
+    .panel { background: var(--panel); border: 1px solid #222; border-radius: 8px; padding: 20px; }
     #chartContainer { flex: 1; background: #000; border: 1px solid #222; border-radius: 4px; overflow: hidden; }
     input { width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
-    button.primary { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
+    button { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
   </style>
 </head>
 <body>
 
 <div id="auth-gate">
   <div class="auth-box">
-    <h2 style="color:var(--accent); margin-bottom:10px;">TRADEVISION PRO</h2>
-    <p style="font-size:11px; color:#888; margin-bottom:20px;">TARA SWINGLAB ENGINE v2.0</p>
+    <h2 style="color:var(--accent); margin-bottom:20px;">TRADEVISION PRO</h2>
     <div id="auth-error" style="color:#f23645; font-size:12px; margin-bottom:10px;"></div>
     <input type="email" id="email" placeholder="Email" value="admin@swinglab.pro" />
     <input type="password" id="password" placeholder="Password" />
-    <button class="primary" onclick="handleAuth()">Enter Workspace</button>
+    <button onclick="handleAuth()">ENTER WORKSPACE</button>
   </div>
 </div>
 
@@ -40,9 +43,9 @@
   <main>
     <section class="panel">
       <div style="font-size:11px; color:#888; margin-bottom:10px;">ENGINE CONTROL</div>
-      <input id="symbol" type="text" placeholder="Ticker (e.g. RELIANCE)" />
-      <button class="primary" id="sim-btn" onclick="runSimulation()">REVEAL GLOW</button>
-      <div id="status-panel" style="margin-top:20px; display:none; font-size:12px;">
+      <input id="symbol" type="text" placeholder="Ticker (e.g. SBIN)" />
+      <button onclick="runSimulation()">REVEAL GLOW</button>
+      <div id="status" style="margin-top:20px; display:none; font-size:12px;">
         <p>Fused Score: <span id="f-score" style="color:var(--accent)">--</span></p>
         <p>Astro Node: <span id="f-node" style="color:var(--success)">--</span></p>
       </div>
@@ -52,12 +55,8 @@
 </div>
 
 <script>
-  // NO MORE TYPING URLS: This automatically reads from Vercel's Environment
-  // NOTE: If testing locally, you can replace these once, but on Vercel they auto-fill.
-  const _supabase = supabase.createClient(
-    'process.env.NEXT_PUBLIC_SUPABASE_URL' || 'YOUR_ACTUAL_URL_HERE_ONCE', 
-    'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY' || 'YOUR_ACTUAL_ANON_KEY_HERE_ONCE'
-  );
+  // INITIALIZE FROM GLOBAL CONFIG
+  const _supabase = supabase.createClient(window.SWINGLAB_CONFIG.SUPABASE_URL, window.SWINGLAB_CONFIG.SUPABASE_ANON_KEY);
 
   let chart, mainSeries, forecastSeries;
 
@@ -66,7 +65,10 @@
     const password = document.getElementById('password').value;
     const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
 
-    if (error) return document.getElementById('auth-error').innerText = error.message;
+    if (error) {
+      document.getElementById('auth-error').innerText = error.message;
+      return;
+    }
     
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
@@ -87,33 +89,22 @@
 
   async function runSimulation() {
     const symbol = document.getElementById('symbol').value.trim().toUpperCase();
-    const btn = document.getElementById('sim-btn');
     if(!symbol) return;
 
-    btn.innerText = "SYNCING...";
-    btn.disabled = true;
-
-    try {
-      const response = await fetch('/api/get_glow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol })
-      });
-      const data = await response.json();
-      
-      if (data && data.historical) {
-        mainSeries.setData(data.historical);
-        forecastSeries.setData(data.forecast);
-        document.getElementById('status-panel').style.display = 'block';
-        document.getElementById('f-score').innerText = data.fused_score;
-        document.getElementById('f-node').innerText = data.temporal_node;
-        chart.timeScale().fitContent();
-      }
-    } catch (err) {
-      alert("System Error: Ensure credentials are set in Vercel.");
-    } finally {
-      btn.innerText = "REVEAL GLOW";
-      btn.disabled = false;
+    const response = await fetch('/api/get_glow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol })
+    });
+    
+    const data = await response.json();
+    if (data && data.historical) {
+      mainSeries.setData(data.historical);
+      forecastSeries.setData(data.forecast);
+      document.getElementById('status').style.display = 'block';
+      document.getElementById('f-score').innerText = data.fused_score;
+      document.getElementById('f-node').innerText = data.temporal_node;
+      chart.timeScale().fitContent();
     }
   }
 </script>
