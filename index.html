@@ -3,73 +3,74 @@
 <head>
   <meta charset="UTF-8" />
   <title>TradeVision Pro – SwingLab SaaS</title>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <style>
-    :root { --bg: #050505; --bg-panel: #111; --accent: #D4AF37; --danger: #f23645; --text: #fff; --muted: #888; }
-    body { font-family: sans-serif; background: var(--bg); color: var(--text); height: 100vh; margin: 0; display: flex; flex-direction: column; overflow: hidden; }
-    #auth-gate { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-    .auth-box { background: var(--bg-panel); border: 1px solid #333; padding: 40px; width: 400px; text-align: center; border-radius: 8px; }
-    .auth-brand { font-size: 24px; color: var(--accent); font-weight: bold; margin-bottom: 20px; }
-    .auth-input { width: 100%; background: #000; border: 1px solid #333; color: #fff; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
-    .auth-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 10px; }
-    #app-container { display: none; flex-direction: column; height: 100%; }
-    header { padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
-    main { flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 12px; padding: 12px; }
-    .panel { background: var(--bg-panel); border: 1px solid #222; padding: 16px; border-radius: 8px; }
+    :root { --bg: #050505; --panel: #111; --accent: #D4AF37; --text: #fff; }
+    body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    #auth-gate { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .auth-box { background: var(--panel); border: 1px solid #333; padding: 40px; border-radius: 8px; width: 380px; text-align: center; }
+    #app-container { display: none; flex: 1; flex-direction: column; }
+    header { padding: 15px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+    main { flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 10px; padding: 10px; }
+    .panel { background: var(--panel); border: 1px solid #222; border-radius: 8px; padding: 20px; }
     #chartContainer { flex: 1; background: #000; border: 1px solid #222; border-radius: 4px; }
+    input { width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+    button.primary { width: 100%; background: var(--accent); border: none; padding: 14px; font-weight: bold; cursor: pointer; border-radius: 4px; color: #000; }
   </style>
 </head>
 <body>
 
 <div id="auth-gate">
   <div class="auth-box">
-    <div class="auth-brand">TRADEVISION PRO</div>
-    <div id="auth-msg" style="font-size: 12px; color: var(--danger); margin-bottom: 10px;"></div>
-    <input type="email" id="email-input" class="auth-input" placeholder="Email" value="admin@swinglab.pro" />
-    <input type="password" id="password-input" class="auth-input" placeholder="Password" />
-    <button id="auth-btn" class="auth-btn" onclick="handleAuth()">SIGN IN</button>
-    <div style="font-size: 11px; color: var(--muted); margin-top: 15px; cursor: pointer;" onclick="toggleMode()" id="toggle-txt">New User? Create Account</div>
+    <h2 style="color:var(--accent); margin-bottom:20px;">TRADEVISION PRO</h2>
+    <div id="auth-error" style="color:#f23645; font-size:12px; margin-bottom:10px;"></div>
+    <input type="email" id="email" placeholder="Email" value="admin@swinglab.pro" />
+    <input type="password" id="pass" placeholder="Password" />
+    <button class="primary" onclick="handleAuth()" id="auth-btn">SIGN IN</button>
+    <div onclick="toggleAuth()" id="toggle-txt" style="font-size:11px; color:#888; margin-top:15px; cursor:pointer;">New User? Register</div>
   </div>
 </div>
 
 <div id="app-container">
   <header>
-    <h1 style="font-size: 18px; color: var(--accent);">SWINGLAB TERMINAL</h1>
-    <button onclick="logout()" style="background:none; border:1px solid #444; color:#888; cursor:pointer; font-size:10px; padding:4px 8px;">LOGOUT</button>
+    <div style="color:var(--accent); font-weight:bold; letter-spacing:1px;">SWINGLAB TERMINAL</div>
+    <button onclick="location.reload()" style="background:none; border:1px solid #444; color:#888; cursor:pointer; padding:5px 10px;">LOGOUT</button>
   </header>
   <main>
     <section class="panel">
-      <input id="symbolInput" type="text" placeholder="Ticker (e.g. RELIANCE)" style="width:100%; background:#000; color:#fff; border:1px solid #333; padding:10px; margin-bottom:10px;" />
-      <button onclick="runSim()" style="width:100%; background:var(--accent); border:none; padding:12px; font-weight:bold; cursor:pointer;">REVEAL GLOW</button>
+      <div style="font-size:11px; color:#888; margin-bottom:10px;">ENGINE CONTROL</div>
+      <input id="symbol" type="text" placeholder="Ticker (e.g., RELIANCE)" />
+      <button class="primary" onclick="runSimulation()">REVEAL GLOW</button>
+      <div id="status" style="margin-top:20px; display:none; font-size:12px;">
+        <p>Fused Score: <span id="f-score" style="color:var(--accent)">--</span></p>
+        <p>Astro Node: <span id="f-node" style="color:#089981">--</span></p>
+      </div>
     </section>
     <section class="panel"><div id="chartContainer"></div></section>
   </main>
 </div>
 
 <script>
-  // 1. YOUR CREDENTIALS GO HERE
-  const SUPABASE_URL = 'https://tfpscbilfwekzvvktinm.supabase.co'; 
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcHNjYmlsZndla3p2dmt0aW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTQyNDQsImV4cCI6MjA4NjQ3MDI0NH0.EbCB3tMmXJVqIk3z1xTE3T-rBIqGMbI4cEY5-WmItlk';
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+  // 1. YOUR CREDENTIALS
+  const _supabase = supabase.createClient('https://tfpscbilfwekzvvktinm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcHNjYmlsZndla3p2dmt0aW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTQyNDQsImV4cCI6MjA4NjQ3MDI0NH0.EbCB3tMmXJVqIk3z1xTE3T-rBIqGMbI4cEY5-WmItlk');
   let isLogin = true;
   let chart, mainSeries, forecastSeries;
 
-  function toggleMode() {
+  function toggleAuth() {
     isLogin = !isLogin;
     document.getElementById('auth-btn').innerText = isLogin ? "SIGN IN" : "CREATE ACCOUNT";
-    document.getElementById('toggle-txt').innerText = isLogin ? "New User? Create Account" : "Existing User? Sign In";
+    document.getElementById('toggle-txt').innerText = isLogin ? "New User? Register" : "Existing User? Sign In";
   }
 
   async function handleAuth() {
-    const email = document.getElementById('email-input').value;
-    const password = document.getElementById('password-input').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('pass').value;
     const { data, error } = isLogin 
       ? await _supabase.auth.signInWithPassword({ email, password })
       : await _supabase.auth.signUp({ email, password });
 
-    if (error) return document.getElementById('auth-msg').innerText = error.message;
+    if (error) return document.getElementById('auth-error').innerText = error.message;
     
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
@@ -77,33 +78,38 @@
   }
 
   function initChart() {
-    chart = LightweightCharts.createChart(document.getElementById('chartContainer'), {
+    const container = document.getElementById('chartContainer');
+    chart = LightweightCharts.createChart(container, {
       layout: { background: { color: '#000' }, textColor: '#D4AF37' },
-      grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } }
+      grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
+      width: container.clientWidth,
+      height: container.clientHeight,
     });
+    // v4.x Syntax Fix
     mainSeries = chart.addCandlestickSeries({ upColor: '#089981', downColor: '#f23645' });
-    forecastSeries = chart.addCandlestickSeries({ upColor: '#D4AF37', downColor: '#AA8A2E', borderVisible: true });
-    
-    // Set chart dimensions
-    const c = document.getElementById('chartContainer');
-    chart.applyOptions({ width: c.clientWidth, height: c.clientHeight });
+    forecastSeries = chart.addCandlestickSeries({ upColor: '#D4AF37', downColor: '#AA8A2E' });
   }
 
-  async function runSim() {
-    const symbol = document.getElementById('symbolInput').value;
+  async function runSimulation() {
+    const symbol = document.getElementById('symbol').value.trim().toUpperCase();
+    if(!symbol) return alert("Enter Ticker");
+
     const response = await fetch('/api/get_glow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ symbol })
     });
+    
     const data = await response.json();
-    if (data) {
-      mainSeries.setData(data.historical || []);
-      forecastSeries.setData(data.forecast || []);
+    if (data && data.historical) {
+      mainSeries.setData(data.historical);
+      forecastSeries.setData(data.forecast);
+      document.getElementById('status').style.display = 'block';
+      document.getElementById('f-score').innerText = data.fused_score;
+      document.getElementById('f-node').innerText = data.temporal_node;
+      chart.timeScale().fitContent();
     }
   }
-
-  function logout() { _supabase.auth.signOut(); location.reload(); }
 </script>
 </body>
 </html>
