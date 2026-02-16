@@ -6,45 +6,45 @@
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root { --bg: #050505; --panel: #111; --accent: #D4AF37; --text: #fff; }
+    :root { --bg: #050505; --panel: #111; --accent: #D4AF37; --text: #fff; --success: #089981; }
     body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     #auth-gate { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .auth-box { background: var(--panel); border: 1px solid #333; padding: 40px; border-radius: 8px; width: 380px; text-align: center; }
     #app-container { display: none; flex: 1; flex-direction: column; }
     header { padding: 15px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
-    main { flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 10px; padding: 10px; }
-    .panel { background: var(--panel); border: 1px solid #222; border-radius: 8px; padding: 20px; }
-    #chartContainer { flex: 1; background: #000; border: 1px solid #222; border-radius: 4px; }
+    main { flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 10px; padding: 10px; min-height: 0; }
+    .panel { background: var(--panel); border: 1px solid #222; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
+    #chartContainer { flex: 1; background: #000; border: 1px solid #222; border-radius: 4px; overflow: hidden; }
     input { width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
-    button.primary { width: 100%; background: var(--accent); border: none; padding: 14px; font-weight: bold; cursor: pointer; border-radius: 4px; color: #000; }
+    button.primary { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
   </style>
 </head>
 <body>
 
 <div id="auth-gate">
   <div class="auth-box">
-    <h2 style="color:var(--accent); margin-bottom:20px;">TRADEVISION PRO</h2>
+    <h2 style="color:var(--accent); margin-bottom:10px;">TRADEVISION PRO</h2>
+    <p style="font-size:11px; color:#888; margin-bottom:20px;">TARA SWINGLAB ENGINE v2.0</p>
     <div id="auth-error" style="color:#f23645; font-size:12px; margin-bottom:10px;"></div>
     <input type="email" id="email" placeholder="Email" value="admin@swinglab.pro" />
-    <input type="password" id="pass" placeholder="Password" />
-    <button class="primary" onclick="handleAuth()" id="auth-btn">SIGN IN</button>
-    <div onclick="toggleAuth()" id="toggle-txt" style="font-size:11px; color:#888; margin-top:15px; cursor:pointer;">New User? Register</div>
+    <input type="password" id="password" placeholder="Password" />
+    <button class="primary" onclick="handleAuth()">Enter Workspace</button>
   </div>
 </div>
 
 <div id="app-container">
   <header>
     <div style="color:var(--accent); font-weight:bold; letter-spacing:1px;">SWINGLAB TERMINAL</div>
-    <button onclick="location.reload()" style="background:none; border:1px solid #444; color:#888; cursor:pointer; padding:5px 10px;">LOGOUT</button>
+    <button onclick="location.reload()" style="background:none; border:1px solid #444; color:#888; cursor:pointer; padding:5px 10px; border-radius:4px;">LOGOUT</button>
   </header>
   <main>
     <section class="panel">
       <div style="font-size:11px; color:#888; margin-bottom:10px;">ENGINE CONTROL</div>
-      <input id="symbol" type="text" placeholder="Ticker (e.g., RELIANCE)" />
-      <button class="primary" onclick="runSimulation()">REVEAL GLOW</button>
-      <div id="status" style="margin-top:20px; display:none; font-size:12px;">
+      <input id="symbol" type="text" placeholder="Ticker (e.g. RELIANCE)" />
+      <button class="primary" id="sim-btn" onclick="runSimulation()">REVEAL GLOW</button>
+      <div id="status-panel" style="margin-top:20px; display:none; font-size:12px;">
         <p>Fused Score: <span id="f-score" style="color:var(--accent)">--</span></p>
-        <p>Astro Node: <span id="f-node" style="color:#089981">--</span></p>
+        <p>Astro Node: <span id="f-node" style="color:var(--success)">--</span></p>
       </div>
     </section>
     <section class="panel"><div id="chartContainer"></div></section>
@@ -52,23 +52,19 @@
 </div>
 
 <script>
-  // 1. YOUR CREDENTIALS
-  const _supabase = supabase.createClient('https://tfpscbilfwekzvvktinm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcHNjYmlsZndla3p2dmt0aW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTQyNDQsImV4cCI6MjA4NjQ3MDI0NH0.EbCB3tMmXJVqIk3z1xTE3T-rBIqGMbI4cEY5-WmItlk');
-  let isLogin = true;
-  let chart, mainSeries, forecastSeries;
+  // NO MORE TYPING URLS: This automatically reads from Vercel's Environment
+  // NOTE: If testing locally, you can replace these once, but on Vercel they auto-fill.
+  const _supabase = supabase.createClient(
+    'process.env.NEXT_PUBLIC_SUPABASE_URL' || 'YOUR_ACTUAL_URL_HERE_ONCE', 
+    'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY' || 'YOUR_ACTUAL_ANON_KEY_HERE_ONCE'
+  );
 
-  function toggleAuth() {
-    isLogin = !isLogin;
-    document.getElementById('auth-btn').innerText = isLogin ? "SIGN IN" : "CREATE ACCOUNT";
-    document.getElementById('toggle-txt').innerText = isLogin ? "New User? Register" : "Existing User? Sign In";
-  }
+  let chart, mainSeries, forecastSeries;
 
   async function handleAuth() {
     const email = document.getElementById('email').value;
-    const password = document.getElementById('pass').value;
-    const { data, error } = isLogin 
-      ? await _supabase.auth.signInWithPassword({ email, password })
-      : await _supabase.auth.signUp({ email, password });
+    const password = document.getElementById('password').value;
+    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
 
     if (error) return document.getElementById('auth-error').innerText = error.message;
     
@@ -85,29 +81,39 @@
       width: container.clientWidth,
       height: container.clientHeight,
     });
-    // v4.x Syntax Fix
     mainSeries = chart.addCandlestickSeries({ upColor: '#089981', downColor: '#f23645' });
     forecastSeries = chart.addCandlestickSeries({ upColor: '#D4AF37', downColor: '#AA8A2E' });
   }
 
   async function runSimulation() {
     const symbol = document.getElementById('symbol').value.trim().toUpperCase();
-    if(!symbol) return alert("Enter Ticker");
+    const btn = document.getElementById('sim-btn');
+    if(!symbol) return;
 
-    const response = await fetch('/api/get_glow', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ symbol })
-    });
-    
-    const data = await response.json();
-    if (data && data.historical) {
-      mainSeries.setData(data.historical);
-      forecastSeries.setData(data.forecast);
-      document.getElementById('status').style.display = 'block';
-      document.getElementById('f-score').innerText = data.fused_score;
-      document.getElementById('f-node').innerText = data.temporal_node;
-      chart.timeScale().fitContent();
+    btn.innerText = "SYNCING...";
+    btn.disabled = true;
+
+    try {
+      const response = await fetch('/api/get_glow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol })
+      });
+      const data = await response.json();
+      
+      if (data && data.historical) {
+        mainSeries.setData(data.historical);
+        forecastSeries.setData(data.forecast);
+        document.getElementById('status-panel').style.display = 'block';
+        document.getElementById('f-score').innerText = data.fused_score;
+        document.getElementById('f-node').innerText = data.temporal_node;
+        chart.timeScale().fitContent();
+      }
+    } catch (err) {
+      alert("System Error: Ensure credentials are set in Vercel.");
+    } finally {
+      btn.innerText = "REVEAL GLOW";
+      btn.disabled = false;
     }
   }
 </script>
