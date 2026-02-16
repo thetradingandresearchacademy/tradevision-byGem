@@ -4,35 +4,23 @@
   <meta charset="UTF-8" />
   <title>TradeVision Pro – SwingLab SaaS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-
   <style>
-    :root {
-      --bg: #050505; --bg-panel: #111111; --accent: #D4AF37; 
-      --danger: #f23645; --text: #ffffff; --muted: #888888; --success: #089981;
-    }
+    :root { --bg: #050505; --bg-panel: #111; --accent: #D4AF37; --danger: #f23645; --text: #fff; --muted: #888; --success: #089981; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg); color: var(--text); height: 100vh;
-      display: flex; flex-direction: column; overflow: hidden;
-    }
-    #auth-gate {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
-      z-index: 9999; display: flex; align-items: center; justify-content: center;
-    }
+    body { font-family: sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    #auth-gate { position: fixed; inset: 0; background: rgba(5,5,5,0.98); backdrop-filter: blur(10px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .auth-box { background: var(--bg-panel); border: 1px solid #333; border-radius: 8px; padding: 40px; width: 100%; max-width: 400px; text-align: center; }
-    .auth-brand { font-size: 24px; color: var(--accent); letter-spacing: 0.1em; font-weight: bold; margin-bottom: 5px; }
-    .auth-input { width: 100%; background: #000; border: 1px solid #333; color: var(--text); padding: 12px; margin-bottom: 15px; border-radius: 4px; }
-    .auth-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    #app-container { display: none; flex-direction: column; height: 100%; width: 100%; }
+    .auth-brand { font-size: 24px; color: var(--accent); font-weight: bold; margin-bottom: 15px; }
+    .auth-input { width: 100%; background: #000; border: 1px solid #333; color: #fff; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+    .auth-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .auth-toggle { font-size: 12px; color: var(--muted); margin-top: 15px; cursor: pointer; text-decoration: underline; }
+    #app-container { display: none; flex-direction: column; height: 100%; }
     header { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border-bottom: 1px solid #222; }
-    main { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px; min-height: 0; }
-    .panel { background: var(--bg-panel); border-radius: 8px; border: 1px solid #222; padding: 14px; display: flex; flex-direction: column; }
-    #chartContainer { flex: 1; background: #000; border-radius: 4px; border: 1px solid #222; position: relative; }
+    main { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px; }
+    .panel { background: var(--bg-panel); border-radius: 8px; border: 1px solid #222; padding: 14px; }
+    #chartContainer { flex: 1; background: #000; border-radius: 4px; border: 1px solid #222; }
   </style>
 </head>
 <body>
@@ -40,57 +28,58 @@
 <div id="auth-gate">
   <div class="auth-box">
     <div class="auth-brand">TRADEVISION PRO</div>
-    <div id="auth-error-msg" style="color:var(--danger); font-size:12px; margin-bottom:10px;"></div>
-    <input type="email" id="email-input" class="auth-input" placeholder="Email Address" />
+    <div id="auth-msg" style="font-size: 12px; color: var(--danger); margin-bottom: 10px;"></div>
+    <input type="email" id="email-input" class="auth-input" placeholder="Email" />
     <input type="password" id="password-input" class="auth-input" placeholder="Password" />
-    <button class="auth-btn" onclick="handleLogin()">Sign In to Workspace</button>
+    <button id="main-auth-btn" class="auth-btn" onclick="performAuth()">Sign In to Workspace</button>
+    <div id="auth-toggle-text" class="auth-toggle" onclick="toggleAuthMode()">New User? Create Account</div>
   </div>
 </div>
 
 <div id="app-container">
   <header>
-    <h1>TRADEVISION PRO</h1>
-    <div class="user-profile">
-      <span class="user-email" id="display-email"></span>
+    <h1 style="font-size:18px; color:var(--accent);">TRADEVISION PRO</h1>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span id="display-email" style="font-size:12px; color:var(--muted);"></span>
       <button onclick="logout()" style="background:none; border:1px solid #333; color:var(--muted); font-size:10px; padding:4px 8px; cursor:pointer;">Logout</button>
     </div>
   </header>
-
   <main>
     <section class="panel">
-      <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">📡 SYSTEM CONTROL</div>
-      <input id="symbolInput" type="text" placeholder="Ticker (e.g. RELIANCE)" style="background:#000; color:#fff; border:1px solid #333; padding:10px; border-radius:4px; margin-bottom:10px;" />
-      <button onclick="runSimulation()" style="background:var(--accent); border:none; padding:10px; font-weight:bold; cursor:pointer;">REVEAL ENGINE GLOW</button>
-      
-      <div id="status-panel" style="margin-top:20px; font-size:12px; line-height:1.8; display:none;">
+      <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">📡 ENGINE CONTROL</div>
+      <input id="symbolInput" type="text" placeholder="Ticker (e.g. RELIANCE)" style="width:100%; background:#000; color:#fff; border:1px solid #333; padding:10px; border-radius:4px; margin-bottom:10px;" />
+      <button onclick="runSimulation()" style="width:100%; background:var(--accent); border:none; padding:10px; font-weight:bold; cursor:pointer;">REVEAL GLOW</button>
+      <div id="stats" style="margin-top:20px; display:none; font-size:12px;">
         <p>Fused Score: <span id="f-score" style="color:var(--accent)">--</span></p>
         <p>Astro Node: <span id="f-node" style="color:var(--success)">--</span></p>
       </div>
     </section>
-
-    <section class="panel">
-      <div id="chartContainer"></div>
-    </section>
+    <section class="panel"><div id="chartContainer"></div></section>
   </main>
 </div>
 
-
 <script>
-  // SECURE: Initialize Supabase with ONLY the PUBLIC Anon Key
-  const _supabase = supabase.createClient('https://tfpscbilfwekzvvktinm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcHNjYmlsZndla3p2dmt0aW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTQyNDQsImV4cCI6MjA4NjQ3MDI0NH0.EbCB3tMmXJVqIk3z1xTE3T-rBIqGMbI4cEY5-WmItlk');
-
+  // SECURE: Use only the Public Anon Key here
+  const _supabase = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
+  let isLoginMode = true;
   let chart, mainSeries, forecastSeries;
 
-  async function handleLogin() {
+  function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    document.getElementById('main-auth-btn').innerText = isLoginMode ? "Sign In to Workspace" : "Create Pro Account";
+    document.getElementById('auth-toggle-text').innerText = isLoginMode ? "New User? Create Account" : "Existing User? Sign In";
+  }
+
+  async function performAuth() {
     const email = document.getElementById('email-input').value;
     const password = document.getElementById('password-input').value;
-    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-      document.getElementById('auth-error-msg').innerText = error.message;
-      return;
-    }
+    const { data, error } = isLoginMode 
+      ? await _supabase.auth.signInWithPassword({ email, password })
+      : await _supabase.auth.signUp({ email, password });
 
+    if (error) return document.getElementById('auth-msg').innerText = error.message;
+    if (!isLoginMode) return document.getElementById('auth-msg').style.color = "var(--success)", document.getElementById('auth-msg').innerText = "Check your email to confirm!";
+    
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
     document.getElementById('display-email').innerText = data.user.email;
@@ -98,34 +87,25 @@
   }
 
   function initChart() {
-    const chartOptions = {
+    chart = LightweightCharts.createChart(document.getElementById('chartContainer'), {
       layout: { background: { color: '#050505' }, textColor: '#D4AF37' },
-      grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
-      timeScale: { borderColor: '#333' }
-    };
-    chart = LightweightCharts.createChart(document.getElementById('chartContainer'), chartOptions);
+      grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } }
+    });
     mainSeries = chart.addCandlestickSeries({ upColor: '#089981', downColor: '#f23645' });
     forecastSeries = chart.addCandlestickSeries({ upColor: '#D4AF37', downColor: '#AA8A2E', borderVisible: true });
   }
 
   async function runSimulation() {
     const symbol = document.getElementById('symbolInput').value;
-    if (!symbol) return;
-
-    // SECURE: Call our Vercel API, not Supabase directly
     const response = await fetch('/api/get_glow', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ symbol: symbol })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol })
     });
-
     const data = await response.json();
-
     if (data) {
-      mainSeries.setData(data.historical); // Gray/White actuals
-      forecastSeries.setData(data.forecast); // The Gold Glow
-      
-      document.getElementById('status-panel').style.display = 'block';
+      mainSeries.setData(data.historical);
+      forecastSeries.setData(data.forecast);
+      document.getElementById('stats').style.display = 'block';
       document.getElementById('f-score').innerText = data.fused_score;
       document.getElementById('f-node').innerText = data.temporal_node;
     }
