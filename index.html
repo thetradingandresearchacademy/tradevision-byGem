@@ -19,31 +19,20 @@
       background: var(--bg); color: var(--text); height: 100vh;
       display: flex; flex-direction: column; overflow: hidden;
     }
-
-    /* AUTH GATE */
     #auth-gate {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
       z-index: 9999; display: flex; align-items: center; justify-content: center;
     }
-    .auth-box {
-      background: var(--bg-panel); border: 1px solid #333; border-radius: 8px;
-      padding: 40px; width: 100%; max-width: 400px; text-align: center;
-    }
+    .auth-box { background: var(--bg-panel); border: 1px solid #333; border-radius: 8px; padding: 40px; width: 100%; max-width: 400px; text-align: center; }
     .auth-brand { font-size: 24px; color: var(--accent); letter-spacing: 0.1em; font-weight: bold; margin-bottom: 5px; }
     .auth-input { width: 100%; background: #000; border: 1px solid #333; color: var(--text); padding: 12px; margin-bottom: 15px; border-radius: 4px; }
     .auth-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    .auth-error { color: var(--danger); font-size: 12px; margin-bottom: 15px; min-height: 15px; }
-
-    /* MAIN UI */
     #app-container { display: none; flex-direction: column; height: 100%; width: 100%; }
     header { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border-bottom: 1px solid #222; }
-    header h1 { font-size: 18px; color: var(--accent); }
-    .user-profile { display: flex; align-items: center; gap: 15px; }
     main { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px; min-height: 0; }
     .panel { background: var(--bg-panel); border-radius: 8px; border: 1px solid #222; padding: 14px; display: flex; flex-direction: column; }
-    #chartContainer { flex: 1; background: #000; border-radius: 4px; border: 1px solid #222; }
-    .btn-primary { background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    #chartContainer { flex: 1; background: #000; border-radius: 4px; border: 1px solid #222; position: relative; }
   </style>
 </head>
 <body>
@@ -51,10 +40,10 @@
 <div id="auth-gate">
   <div class="auth-box">
     <div class="auth-brand">TRADEVISION PRO</div>
-    <div id="auth-error-msg" class="auth-error"></div>
-    <input type="email" id="email-input" class="auth-input" placeholder="Email" />
+    <div id="auth-error-msg" style="color:var(--danger); font-size:12px; margin-bottom:10px;"></div>
+    <input type="email" id="email-input" class="auth-input" placeholder="Email Address" />
     <input type="password" id="password-input" class="auth-input" placeholder="Password" />
-    <button class="auth-btn" onclick="handleAuth()">Sign In to Workspace</button>
+    <button class="auth-btn" onclick="handleLogin()">Sign In to Workspace</button>
   </div>
 </div>
 
@@ -62,23 +51,20 @@
   <header>
     <h1>TRADEVISION PRO</h1>
     <div class="user-profile">
-      <span id="display-email" class="user-email"></span>
-      <span style="font-size: 10px; color: var(--accent); border: 1px solid var(--accent); padding: 2px 6px; border-radius: 3px;">PRO TIER</span>
-      <button onclick="logout()" style="background:none; border:none; color:var(--muted); cursor:pointer;">Logout</button>
+      <span class="user-email" id="display-email"></span>
+      <button onclick="logout()" style="background:none; border:1px solid #333; color:var(--muted); font-size:10px; padding:4px 8px; cursor:pointer;">Logout</button>
     </div>
   </header>
 
   <main>
     <section class="panel">
-      <div style="font-size: 11px; color: var(--muted); margin-bottom: 10px;">📡 SYSTEM CONTROL</div>
-      <div style="display:flex; gap:8px;">
-        <input id="symbolInput" type="text" placeholder="Symbol (e.g., RELIANCE)" style="flex:1; background:#000; color:#fff; border:1px solid #333; padding:5px; border-radius:4px;" />
-        <button class="btn-primary" onclick="loadSimulation()">LOAD ENGINE</button>
-      </div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">📡 SYSTEM CONTROL</div>
+      <input id="symbolInput" type="text" placeholder="Ticker (e.g. RELIANCE)" style="background:#000; color:#fff; border:1px solid #333; padding:10px; border-radius:4px; margin-bottom:10px;" />
+      <button onclick="runSimulation()" style="background:var(--accent); border:none; padding:10px; font-weight:bold; cursor:pointer;">REVEAL ENGINE GLOW</button>
       
-      <div id="engine-stats" style="margin-top:20px; font-size:12px; display:none;">
-        <p>Fused Score: <span id="stat-score" style="color:var(--accent)">--</span></p>
-        <p>Astro Node: <span id="stat-node" style="color:var(--success)">--</span></p>
+      <div id="status-panel" style="margin-top:20px; font-size:12px; line-height:1.8; display:none;">
+        <p>Fused Score: <span id="f-score" style="color:var(--accent)">--</span></p>
+        <p>Astro Node: <span id="f-node" style="color:var(--success)">--</span></p>
       </div>
     </section>
 
@@ -88,55 +74,64 @@
   </main>
 </div>
 
+
 <script>
-  // 1. Initialize Supabase
-  const SUPABASE_URL = 'https://your-project.supabase.co';
-  const SUPABASE_KEY = 'your-anon-key';
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // SECURE: Initialize Supabase with ONLY the PUBLIC Anon Key
+  const _supabase = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
 
   let chart, mainSeries, forecastSeries;
 
-  // 2. Auth Logic
-  async function handleAuth() {
+  async function handleLogin() {
     const email = document.getElementById('email-input').value;
     const password = document.getElementById('password-input').value;
     const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
     
-    if (error) return document.getElementById('auth-error-msg').innerText = error.message;
-    
+    if (error) {
+      document.getElementById('auth-error-msg').innerText = error.message;
+      return;
+    }
+
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
     document.getElementById('display-email').innerText = data.user.email;
     initChart();
   }
 
-  // 3. Chart Initialization
   function initChart() {
-    chart = LightweightCharts.createChart(document.getElementById('chartContainer'), {
+    const chartOptions = {
       layout: { background: { color: '#050505' }, textColor: '#D4AF37' },
       grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
-    });
+      timeScale: { borderColor: '#333' }
+    };
+    chart = LightweightCharts.createChart(document.getElementById('chartContainer'), chartOptions);
     mainSeries = chart.addCandlestickSeries({ upColor: '#089981', downColor: '#f23645' });
     forecastSeries = chart.addCandlestickSeries({ upColor: '#D4AF37', downColor: '#AA8A2E', borderVisible: true });
   }
 
-  // 4. Load Engine Logic (The 0.55/0.45 Trigger)
-  async function loadSimulation() {
+  async function runSimulation() {
     const symbol = document.getElementById('symbolInput').value;
-    // Call the Edge Function we built earlier
-    const { data, error } = await _supabase.functions.invoke('swinglab-engine', { body: { symbol } });
+    if (!symbol) return;
+
+    // SECURE: Call our Vercel API, not Supabase directly
+    const response = await fetch('/api/get_glow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol: symbol })
+    });
+
+    const data = await response.json();
 
     if (data) {
-      mainSeries.setData(data.historical);
-      forecastSeries.setData(data.forecast);
+      mainSeries.setData(data.historical); // Gray/White actuals
+      forecastSeries.setData(data.forecast); // The Gold Glow
       
-      document.getElementById('engine-stats').style.display = 'block';
-      document.getElementById('stat-score').innerText = data.fused_score;
-      document.getElementById('stat-node').innerText = data.temporal_node;
+      document.getElementById('status-panel').style.display = 'block';
+      document.getElementById('f-score').innerText = data.fused_score;
+      document.getElementById('f-node').innerText = data.temporal_node;
     }
   }
 
-  async function logout() { await _supabase.auth.signOut(); location.reload(); }
+  function logout() { _supabase.auth.signOut(); location.reload(); }
 </script>
 </body>
 </html>
