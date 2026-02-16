@@ -6,168 +6,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
   <style>
     :root {
-      /* TARA SwingLab High-Contrast Theme */
-      --bg: #050505;
-      --bg-panel: #111111;
-      --accent: #D4AF37; /* Gold */
-      --danger: #f23645;
-      --text: #ffffff;
-      --muted: #888888;
-      --success: #089981;
+      --bg: #050505; --bg-panel: #111111; --accent: #D4AF37; 
+      --danger: #f23645; --text: #ffffff; --muted: #888888; --success: #089981;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      background: var(--bg); color: var(--text); height: 100vh;
+      display: flex; flex-direction: column; overflow: hidden;
     }
 
-    /* =========================================
-       SAAS AUTHENTICATION GATE (LOGIN SCREEN)
-       ========================================= */
+    /* AUTH GATE */
     #auth-gate {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(5, 5, 5, 0.95);
-      backdrop-filter: blur(10px);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.5s ease;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
+      z-index: 9999; display: flex; align-items: center; justify-content: center;
     }
     .auth-box {
-      background: var(--bg-panel);
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 40px;
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      background: var(--bg-panel); border: 1px solid #333; border-radius: 8px;
+      padding: 40px; width: 100%; max-width: 400px; text-align: center;
     }
-    .auth-brand {
-      font-size: 24px;
-      color: var(--accent);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    .auth-subtitle {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 30px;
-      letter-spacing: 0.05em;
-    }
-    .auth-input {
-      width: 100%;
-      background: #000;
-      border: 1px solid #333;
-      color: var(--text);
-      padding: 12px;
-      margin-bottom: 15px;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .auth-input:focus {
-      border-color: var(--accent);
-      outline: none;
-    }
-    .auth-btn {
-      width: 100%;
-      background: var(--accent);
-      color: #000;
-      border: none;
-      padding: 12px;
-      border-radius: 4px;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      margin-bottom: 10px;
-    }
-    .auth-btn:hover { opacity: 0.9; }
-    .auth-btn-secondary {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid #333;
-    }
-    .auth-btn-secondary:hover { border-color: var(--text); color: var(--text); }
-    .auth-error {
-      color: var(--danger);
-      font-size: 12px;
-      margin-bottom: 15px;
-      min-height: 15px;
-    }
+    .auth-brand { font-size: 24px; color: var(--accent); letter-spacing: 0.1em; font-weight: bold; margin-bottom: 5px; }
+    .auth-input { width: 100%; background: #000; border: 1px solid #333; color: var(--text); padding: 12px; margin-bottom: 15px; border-radius: 4px; }
+    .auth-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .auth-error { color: var(--danger); font-size: 12px; margin-bottom: 15px; min-height: 15px; }
 
-    /* =========================================
-       MAIN TERMINAL UI (HIDDEN UNTIL LOGIN)
-       ========================================= */
-    #app-container {
-      display: none; /* Locked by default */
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-    }
-
-    header {
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0a0a0a;
-      border-bottom: 1px solid #222;
-    }
-    header h1 { font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-    
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .user-email { font-size: 12px; color: var(--muted); }
-    .logout-btn {
-      background: transparent; border: 1px solid #333; color: var(--muted);
-      padding: 4px 10px; font-size: 10px; border-radius: 4px; cursor: pointer;
-    }
-    .logout-btn:hover { color: var(--danger); border-color: var(--danger); }
-
-    main {
-      flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px; min-height: 0;
-    }
-    @media (max-width: 1024px) {
-      main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
-    }
-    .panel {
-      background: var(--bg-panel); border-radius: 8px; border: 1px solid #222;
-      padding: 14px; display: flex; flex-direction: column; min-height: 0;
-    }
-    .panel-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.12em; }
-    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
-    
-    /* Input & Button Styles */
-    .control-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-    input[type="text"], select, button { background: #000; border: 1px solid #333; color: var(--text); padding: 6px 8px; border-radius: 4px; font-size: 12px; }
-    input[type="text"]:focus, select:focus { border-color: var(--accent); outline: none; }
-    
-    button { cursor: pointer; text-transform: uppercase; font-weight: bold; transition: all 0.2s; }
-    button.primary { background: var(--accent); color: #000; border: none; }
-    button.primary:hover { opacity: 0.9; }
-    
-    #chartContainer {
-      flex: 1; background: #000; border-radius: 4px; border: 1px solid #222;
-      display: flex; align-items: center; justify-content: center; color: var(--muted);
-    }
+    /* MAIN UI */
+    #app-container { display: none; flex-direction: column; height: 100%; width: 100%; }
+    header { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border-bottom: 1px solid #222; }
+    header h1 { font-size: 18px; color: var(--accent); }
+    .user-profile { display: flex; align-items: center; gap: 15px; }
+    main { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 12px; min-height: 0; }
+    .panel { background: var(--bg-panel); border-radius: 8px; border: 1px solid #222; padding: 14px; display: flex; flex-direction: column; }
+    #chartContainer { flex: 1; background: #000; border-radius: 4px; border: 1px solid #222; }
+    .btn-primary { background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -175,154 +51,92 @@
 <div id="auth-gate">
   <div class="auth-box">
     <div class="auth-brand">TRADEVISION PRO</div>
-    <div class="auth-subtitle">TARA SwingLab Engine • Authorized Access Only</div>
-    
     <div id="auth-error-msg" class="auth-error"></div>
-    
-    <input type="email" id="email-input" class="auth-input" placeholder="Email Address" required />
-    <input type="password" id="password-input" class="auth-input" placeholder="Password" required />
-    
-    <button class="auth-btn" onclick="simulateLogin()">Sign In to Workspace</button>
-    <button class="auth-btn auth-btn-secondary" onclick="alert('SaaS Billing & Registration module will be connected to Supabase in Phase 2.')">Create Account</button>
+    <input type="email" id="email-input" class="auth-input" placeholder="Email" />
+    <input type="password" id="password-input" class="auth-input" placeholder="Password" />
+    <button class="auth-btn" onclick="handleAuth()">Sign In to Workspace</button>
   </div>
 </div>
 
 <div id="app-container">
   <header>
-    <div>
-      <h1>TRADEVISION PRO</h1>
-    </div>
+    <h1>TRADEVISION PRO</h1>
     <div class="user-profile">
-      <span class="user-email" id="display-email">user@domain.com</span>
+      <span id="display-email" class="user-email"></span>
       <span style="font-size: 10px; color: var(--accent); border: 1px solid var(--accent); padding: 2px 6px; border-radius: 3px;">PRO TIER</span>
-      <button class="logout-btn" onclick="logout()">Sign Out</button>
+      <button onclick="logout()" style="background:none; border:none; color:var(--muted); cursor:pointer;">Logout</button>
     </div>
   </header>
 
   <main>
     <section class="panel">
-      <div class="panel-header">Terminal Controls</div>
-      
-      <div class="section-label">📡 Database Connection</div>
-      <div class="control-row">
-        <input id="symbolInput" type="text" placeholder="Ticker (e.g. RELIANCE)" style="flex: 1;" />
-        <button class="primary" onclick="alert('In Phase 2, this will ping your Supabase Edge Function to fetch actual NIFTY 500 history.')">Load</button>
-      </div>
-
-      <div class="section-label">⚙️ Astro-Regime Settings</div>
-      <div class="control-row">
-        <select style="flex: 1;">
-          <option>Auto-Detect Cosmic Vector</option>
-          <option>Force Positive Alpha</option>
-          <option>Force Volatility Compression</option>
-        </select>
+      <div style="font-size: 11px; color: var(--muted); margin-bottom: 10px;">📡 SYSTEM CONTROL</div>
+      <div style="display:flex; gap:8px;">
+        <input id="symbolInput" type="text" placeholder="Symbol (e.g., RELIANCE)" style="flex:1; background:#000; color:#fff; border:1px solid #333; padding:5px; border-radius:4px;" />
+        <button class="btn-primary" onclick="loadSimulation()">LOAD ENGINE</button>
       </div>
       
-      <div style="margin-top: 20px; font-size: 11px; color: var(--muted); line-height: 1.5;">
-        <p><strong>System Status:</strong></p>
-        <p style="color: var(--success);">✅ SaaS Auth Gate Deployed</p>
-        <p style="color: var(--warning);">⏳ Awaiting Supabase DB Connection</p>
+      <div id="engine-stats" style="margin-top:20px; font-size:12px; display:none;">
+        <p>Fused Score: <span id="stat-score" style="color:var(--accent)">--</span></p>
+        <p>Astro Node: <span id="stat-node" style="color:var(--success)">--</span></p>
       </div>
     </section>
 
     <section class="panel">
-      <div class="panel-header">SwingLab Canvas Projection</div>
-      <div id="chartContainer">
-        <p style="text-align: center; max-width: 300px;">
-          The HTML5 Canvas Engine is secured.<br><br>
-          Once your Supabase PostgreSQL database is linked, the synthetic Monte Carlo coordinates will render here.
-        </p>
-      </div>
+      <div id="chartContainer"></div>
     </section>
   </main>
 </div>
 
 <script>
-  // 1. Initialize Supabase (Use your Vercel Env Vars here)
-const _supabase = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
+  // 1. Initialize Supabase
+  const SUPABASE_URL = 'https://your-project.supabase.co';
+  const SUPABASE_KEY = 'your-anon-key';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let chart, candlestickSeries, forecastSeries;
+  let chart, mainSeries, forecastSeries;
 
-// 2. Real Auth Logic (Replaces simulateLogin)
-async function simulateLogin() {
+  // 2. Auth Logic
+  async function handleAuth() {
     const email = document.getElementById('email-input').value;
     const password = document.getElementById('password-input').value;
-    const btn = document.querySelector('.auth-btn');
-
-    btn.innerText = "Connecting to SwingLab...";
-    
     const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-        document.getElementById('auth-error-msg').innerText = error.message;
-        btn.innerText = "Sign In to Workspace";
-        return;
-    }
-
-    // Success: Reveal the Terminal
+    
+    if (error) return document.getElementById('auth-error-msg').innerText = error.message;
+    
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
     document.getElementById('display-email').innerText = data.user.email;
-    initChart(); // Initialize the Canvas
-}
+    initChart();
+  }
 
-// 3. The Canvas Engine (Lightweight Charts Integration)
-function initChart() {
-    const container = document.getElementById('chartContainer');
-    container.innerHTML = ''; // Clear the "Secured" placeholder
-
-    chart = LightweightCharts.createChart(container, {
-        layout: { background: { color: '#050505' }, textColor: '#D4AF37' },
-        grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+  // 3. Chart Initialization
+  function initChart() {
+    chart = LightweightCharts.createChart(document.getElementById('chartContainer'), {
+      layout: { background: { color: '#050505' }, textColor: '#D4AF37' },
+      grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
     });
+    mainSeries = chart.addCandlestickSeries({ upColor: '#089981', downColor: '#f23645' });
+    forecastSeries = chart.addCandlestickSeries({ upColor: '#D4AF37', downColor: '#AA8A2E', borderVisible: true });
+  }
 
-    candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#089981', downColor: '#f23645', borderVisible: false, wickUpColor: '#089981', wickDownColor: '#f23645'
-    });
-
-    // This is the "Gold Glow" Series for Future Candles
-    forecastSeries = chart.addCandlestickSeries({
-        upColor: '#D4AF37', downColor: '#AA8A2E', borderVisible: true, borderColor: '#D4AF37'
-    });
-}
-
-// 4. Trigger the "Brain" (Supabase Edge Function Plug)
-async function loadEngineData() {
+  // 4. Load Engine Logic (The 0.55/0.45 Trigger)
+  async function loadSimulation() {
     const symbol = document.getElementById('symbolInput').value;
-    if (!symbol) return alert("Enter Ticker");
-
-    // Call your Edge Function (The 0.55/0.45 Logic)
-    const { data, error } = await _supabase.functions.invoke('swinglab-engine', {
-        body: { symbol: symbol, type: 'simulation' }
-    });
+    // Call the Edge Function we built earlier
+    const { data, error } = await _supabase.functions.invoke('swinglab-engine', { body: { symbol } });
 
     if (data) {
-        // Set historical data
-        candlestickSeries.setData(data.historical);
-        
-        // REVEAL GLOW: Play the forward candles in Gold
-        forecastSeries.setData(data.forecast);
-        
-        // Update the UI with the Fused Score (Expert/Pro Tier)
-        console.log(`Fused Score: ${data.fused_score} | Node: ${data.temporal_node}`);
+      mainSeries.setData(data.historical);
+      forecastSeries.setData(data.forecast);
+      
+      document.getElementById('engine-stats').style.display = 'block';
+      document.getElementById('stat-score').innerText = data.fused_score;
+      document.getElementById('stat-node').innerText = data.temporal_node;
     }
-}
+  }
 
-// 5. "Beat the Engine" - Scoring Logic
-async function submitPrediction(userPrice) {
-    const { data, error } = await _supabase.rpc('beat_the_engine', {
-        user_pred_price: userPrice,
-        user_id: (await _supabase.auth.getUser()).data.user.id
-    });
-    alert(`Accuracy: ${data.accuracy}% | TARA Score: +${data.points_awarded}`);
-}
-
-async function logout() {
-    await _supabase.auth.signOut();
-    location.reload();
-}
+  async function logout() { await _supabase.auth.signOut(); location.reload(); }
 </script>
-
 </body>
 </html>
